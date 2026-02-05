@@ -14,7 +14,7 @@ import com.example.matrixarctic.ui.model.KnowledgeNote
 fun KnowledgeListScreen(navController: NavController) {
     val notes = remember {
         mutableStateListOf(
-            KnowledgeNote("1", "Ancient Code", "Long ancient text...")
+            KnowledgeNote("1", "Код замка", "Код замка №...")
         )
     }
 

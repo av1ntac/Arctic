@@ -14,9 +14,9 @@ import androidx.navigation.compose.rememberNavController
 import com.example.matrixarctic.ui.screens.*
 
 sealed class Screen(val route: String, val icon: ImageVector, val label: String) {
-    object Profile : Screen("profile", Icons.Default.Person, "Profile")
-    object Knowledge : Screen("knowledge", Icons.Default.Info, "Knowledge")
-    object Scan : Screen("scan", Icons.Default.Star, "Scan")
+    object Profile : Screen("profile", Icons.Default.Person, "Профиль")
+    object Knowledge : Screen("knowledge", Icons.Default.Info, "Знания")
+    object Scan : Screen("scan", Icons.Default.Star, "QR")
 }
 
 @Composable

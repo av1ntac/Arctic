@@ -16,10 +16,10 @@ import com.example.matrixarctic.R
 
 @Composable
 fun ProfileScreen() {
-    var name by remember { mutableStateOf("Player Name") }
+    var name by remember { mutableStateOf("Джонни") }
     var isEditing by remember { mutableStateOf(false) }
     var editingName by remember { mutableStateOf(name) }
-    val health = 12
+    val health = 92
 
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -83,8 +83,8 @@ fun ProfileScreen() {
         }
 
         Spacer(Modifier.height(32.dp))
-        Text("HEALTH", style = MaterialTheme.typography.titleMedium)
+        Text("Ментальное здоровье", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
-        Text("❤️ $health", style = MaterialTheme.typography.displaySmall)
+        Text("\uD83E\uDDE0 $health", style = MaterialTheme.typography.displaySmall)
     }
 }

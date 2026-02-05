@@ -9,12 +9,12 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun KnowledgeDetailScreen() {
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Note Title", style = MaterialTheme.typography.titleLarge)
+        Text("Код замка", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(16.dp))
-        Text("Full knowledge content goes here...")
+        Text("Код замка №424. Получен и проверен.")
         Spacer(Modifier.weight(1f))
         Button(onClick = { /* navigate to QR */ }, modifier = Modifier.fillMaxWidth()) {
-            Text("Show QR Code")
+            Text("Поделиться ")
         }
     }
 }
