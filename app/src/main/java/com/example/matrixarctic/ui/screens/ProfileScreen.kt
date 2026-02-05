@@ -11,6 +11,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
+import com.example.matrixarctic.R
 
 @Composable
 fun ProfileScreen() {
@@ -24,7 +26,7 @@ fun ProfileScreen() {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Image(
-            bitmap = profileImageBitmap,
+            painter = painterResource(R.drawable.profile_image),
             contentDescription = "Profile picture",
             modifier = Modifier.size(120.dp)
         )
