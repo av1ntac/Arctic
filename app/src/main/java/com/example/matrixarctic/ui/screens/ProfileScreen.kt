@@ -3,7 +3,7 @@ package com.example.matrixarctic.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.SentimentVerySatisfied
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -40,7 +40,7 @@ fun ProfileScreen() {
                 Spacer(Modifier.width(8.dp))
                 IconButton(onClick = { isEditing = false }) {
                     Icon(
-                        imageVector = Icons.Default.Save,
+                        imageVector = Icons.Default.Check,
                         contentDescription = "Save player name"
                     )
                 }
