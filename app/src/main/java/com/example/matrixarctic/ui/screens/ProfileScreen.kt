@@ -3,6 +3,7 @@ package com.example.matrixarctic.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.SentimentVerySatisfied
 import androidx.compose.material3.*
@@ -15,6 +16,7 @@ import androidx.compose.ui.unit.dp
 fun ProfileScreen() {
     var name by remember { mutableStateOf("Player Name") }
     var isEditing by remember { mutableStateOf(false) }
+    var editingName by remember { mutableStateOf(name) }
     val health = 12
 
     Column(
@@ -33,15 +35,27 @@ fun ProfileScreen() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
+                    value = editingName,
+                    onValueChange = { editingName = it },
                     label = { Text("Player Name") }
                 )
                 Spacer(Modifier.width(8.dp))
-                IconButton(onClick = { isEditing = false }) {
+                IconButton(onClick = {
+                    name = editingName
+                    isEditing = false
+                }) {
                     Icon(
                         imageVector = Icons.Default.Check,
                         contentDescription = "Save player name"
+                    )
+                }
+                IconButton(onClick = {
+                    editingName = name
+                    isEditing = false
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Cancel editing player name"
                     )
                 }
             }
@@ -54,7 +68,10 @@ fun ProfileScreen() {
                     style = MaterialTheme.typography.titleMedium
                 )
                 Spacer(Modifier.width(8.dp))
-                IconButton(onClick = { isEditing = true }) {
+                IconButton(onClick = {
+                    editingName = name
+                    isEditing = true
+                }) {
                     Icon(
                         imageVector = Icons.Default.Edit,
                         contentDescription = "Edit player name"
