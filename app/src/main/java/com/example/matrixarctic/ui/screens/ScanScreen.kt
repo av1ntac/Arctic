@@ -5,25 +5,24 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,7 +30,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
@@ -41,12 +39,14 @@ import com.google.zxing.BinaryBitmap
 import com.google.zxing.MultiFormatReader
 import com.google.zxing.PlanarYUVLuminanceSource
 import com.google.zxing.common.HybridBinarizer
+import java.util.concurrent.Executors
 
 @Composable
 fun ScanScreen() {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var message by remember { mutableStateOf<String?>(null) }
+    var isCapturing by remember { mutableStateOf(false) }
     var hasPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -65,6 +65,19 @@ fun ScanScreen() {
             .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
             .build()
     }
+    val analyzerExecutor = remember { Executors.newSingleThreadExecutor() }
+    val imageAnalysis = remember {
+        ImageAnalysis.Builder()
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build()
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            analyzerExecutor.shutdown()
+        }
+    }
+
     LaunchedEffect(hasPermission) {
         if (!hasPermission) {
             return@LaunchedEffect
@@ -74,12 +87,40 @@ fun ScanScreen() {
             setSurfaceProvider(previewView.surfaceProvider)
         }
         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+        imageAnalysis.setAnalyzer(analyzerExecutor) { image ->
+            if (message != null || isCapturing) {
+                image.close()
+                return@setAnalyzer
+            }
+            val qrText = decodeQr(image)
+            image.close()
+            if (qrText != null && !isCapturing && message == null) {
+                isCapturing = true
+                imageCapture.takePicture(
+                    ContextCompat.getMainExecutor(context),
+                    object : ImageCapture.OnImageCapturedCallback() {
+                        override fun onCaptureSuccess(image: ImageProxy) {
+                            val capturedText = decodeQr(image)
+                            image.close()
+                            message = resolveMessage(capturedText)
+                            isCapturing = false
+                        }
+
+                        override fun onError(exception: ImageCaptureException) {
+                            message = "Неверный QR"
+                            isCapturing = false
+                        }
+                    }
+                )
+            }
+        }
         cameraProvider.unbindAll()
         cameraProvider.bindToLifecycle(
             lifecycleOwner,
             cameraSelector,
             preview,
-            imageCapture
+            imageCapture,
+            imageAnalysis
         )
     }
 
@@ -106,32 +147,6 @@ fun ScanScreen() {
                         .size(previewSize),
                     factory = { previewView }
                 )
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(24.dp)
-                        .background(Color.Black.copy(alpha = 0.5f), MaterialTheme.shapes.medium)
-                        .padding(horizontal = 24.dp, vertical = 12.dp)
-                ) {
-                    Button(onClick = {
-                        imageCapture.takePicture(
-                            ContextCompat.getMainExecutor(context),
-                            object : ImageCapture.OnImageCapturedCallback() {
-                                override fun onCaptureSuccess(image: ImageProxy) {
-                                    val qrText = decodeQr(image)
-                                    image.close()
-                                    message = resolveMessage(qrText)
-                                }
-
-                                override fun onError(exception: ImageCaptureException) {
-                                    message = "Неверный QR"
-                                }
-                            }
-                        )
-                    }) {
-                        Text(text = "Сканировать")
-                    }
-                }
             }
         }
 
