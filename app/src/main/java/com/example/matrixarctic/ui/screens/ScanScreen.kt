@@ -47,6 +47,7 @@ fun ScanScreen() {
     val lifecycleOwner = LocalLifecycleOwner.current
     var message by remember { mutableStateOf<String?>(null) }
     var isCapturing by remember { mutableStateOf(false) }
+    var pendingQrText by remember { mutableStateOf<String?>(null) }
     var hasPermission by remember {
         mutableStateOf(
             ContextCompat.checkSelfPermission(
@@ -96,18 +97,20 @@ fun ScanScreen() {
             image.close()
             if (qrText != null && !isCapturing && message == null) {
                 isCapturing = true
+                pendingQrText = qrText
                 imageCapture.takePicture(
                     ContextCompat.getMainExecutor(context),
                     object : ImageCapture.OnImageCapturedCallback() {
                         override fun onCaptureSuccess(image: ImageProxy) {
-                            val capturedText = decodeQr(image)
                             image.close()
-                            message = resolveMessage(capturedText)
+                            message = resolveMessage(pendingQrText)
+                            pendingQrText = null
                             isCapturing = false
                         }
 
                         override fun onError(exception: ImageCaptureException) {
                             message = "Неверный QR"
+                            pendingQrText = null
                             isCapturing = false
                         }
                     }
@@ -179,6 +182,9 @@ private fun resolveMessage(qrText: String?): String {
 
 private fun decodeQr(image: ImageProxy): String? {
     return try {
+        if (image.planes.size < 3) {
+            return null
+        }
         val nv21 = image.toNv21()
         val source = PlanarYUVLuminanceSource(
             nv21,
