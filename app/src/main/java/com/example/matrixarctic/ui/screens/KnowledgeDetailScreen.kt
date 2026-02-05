@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalDensity
@@ -18,7 +19,10 @@ fun KnowledgeDetailScreen() {
     val qrSizePx = with(LocalDensity.current) { 240.dp.roundToPx() }
     var qrImage by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Text("Код замка", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(16.dp))
         Text("Код замка №424. Получен и проверен.")
@@ -35,7 +39,7 @@ fun KnowledgeDetailScreen() {
         }
         Button(
             onClick = {
-                qrImage = generateQrCode(KNOWLEDGE_GUID, qrSizePx).asImageBitmap()
+                qrImage = generateQrCode(KNOWLEDGE_QR_CONTENT, qrSizePx).asImageBitmap()
             },
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -45,6 +49,9 @@ fun KnowledgeDetailScreen() {
 }
 
 private const val KNOWLEDGE_GUID = "2f05c48c-3a5b-4b6c-8db8-2df2b59c5b2a"
+private const val KNOWLEDGE_TYPE = 1
+private const val KNOWLEDGE_PARAMETER = 0
+private const val KNOWLEDGE_QR_CONTENT = "$KNOWLEDGE_TYPE|$KNOWLEDGE_GUID|$KNOWLEDGE_PARAMETER"
 
 private fun generateQrCode(content: String, sizePx: Int): Bitmap {
     val bitMatrix = QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, sizePx, sizePx)
