@@ -1,17 +1,218 @@
 package com.example.matrixarctic.ui.screens
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
+import com.google.zxing.BinaryBitmap
+import com.google.zxing.MultiFormatReader
+import com.google.zxing.PlanarYUVLuminanceSource
+import com.google.zxing.common.HybridBinarizer
+import java.util.concurrent.Executors
 
 @Composable
 fun ScanScreen() {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    var message by remember { mutableStateOf<String?>(null) }
+    var isCapturing by remember { mutableStateOf(false) }
+    var pendingQrText by remember { mutableStateOf<String?>(null) }
+    var hasPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.CAMERA
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val permissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            hasPermission = granted
+        }
+    val previewView = remember { PreviewView(context) }
+    val imageCapture = remember {
+        ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .build()
+    }
+    val analyzerExecutor = remember { Executors.newSingleThreadExecutor() }
+    val imageAnalysis = remember {
+        ImageAnalysis.Builder()
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build()
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            analyzerExecutor.shutdown()
+        }
+    }
+
+    LaunchedEffect(hasPermission) {
+        if (!hasPermission) {
+            return@LaunchedEffect
+        }
+        val cameraProvider = ProcessCameraProvider.getInstance(context).get()
+        val preview = Preview.Builder().build().apply {
+            setSurfaceProvider(previewView.surfaceProvider)
+        }
+        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+        imageAnalysis.setAnalyzer(analyzerExecutor) { image ->
+            if (message != null || isCapturing) {
+                image.close()
+                return@setAnalyzer
+            }
+            val qrText = decodeQr(image)
+            image.close()
+            if (qrText != null && !isCapturing && message == null) {
+                isCapturing = true
+                pendingQrText = qrText
+                imageCapture.takePicture(
+                    ContextCompat.getMainExecutor(context),
+                    object : ImageCapture.OnImageCapturedCallback() {
+                        override fun onCaptureSuccess(image: ImageProxy) {
+                            image.close()
+                            message = resolveMessage(pendingQrText)
+                            pendingQrText = null
+                            isCapturing = false
+                        }
+
+                        override fun onError(exception: ImageCaptureException) {
+                            message = "Неверный QR"
+                            pendingQrText = null
+                            isCapturing = false
+                        }
+                    }
+                )
+            }
+        }
+        cameraProvider.unbindAll()
+        cameraProvider.bindToLifecycle(
+            lifecycleOwner,
+            cameraSelector,
+            preview,
+            imageCapture,
+            imageAnalysis
+        )
+    }
+
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Text("Camera Preview Here")
+        if (!hasPermission) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(text = "Разрешите доступ к камере")
+                Button(onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) }) {
+                    Text(text = "Разрешить")
+                }
+            }
+        } else {
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val previewSize = maxWidth.coerceAtMost(maxHeight)
+                AndroidView(
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(previewSize),
+                    factory = { previewView }
+                )
+            }
+        }
+
+        message?.let { dialogMessage ->
+            AlertDialog(
+                onDismissRequest = { message = null },
+                confirmButton = {
+                    Button(onClick = { message = null }) {
+                        Text(text = "Ок")
+                    }
+                },
+                text = { Text(text = dialogMessage) }
+            )
+        }
     }
+}
+
+private fun resolveMessage(qrText: String?): String {
+    val parts = qrText?.split("|")
+    if (parts == null || parts.size != 3) {
+        return "Неверный QR"
+    }
+    return when (parts[0].toIntOrNull()) {
+        1 -> "Знание добавлено"
+        2 -> "Ментальное здоровье понижено на 10"
+        3 -> "Ментальное здоровье увеличено на 5"
+        else -> "Неверный QR"
+    }
+}
+
+private fun decodeQr(image: ImageProxy): String? {
+    return try {
+        if (image.planes.size < 3) {
+            return null
+        }
+        val nv21 = image.toNv21()
+        val source = PlanarYUVLuminanceSource(
+            nv21,
+            image.width,
+            image.height,
+            0,
+            0,
+            image.width,
+            image.height,
+            false
+        )
+        val bitmap = BinaryBitmap(HybridBinarizer(source))
+        MultiFormatReader().decode(bitmap).text
+    } catch (exception: Exception) {
+        null
+    }
+}
+
+private fun ImageProxy.toNv21(): ByteArray {
+    val yBuffer = planes[0].buffer
+    val uBuffer = planes[1].buffer
+    val vBuffer = planes[2].buffer
+    val ySize = yBuffer.remaining()
+    val uSize = uBuffer.remaining()
+    val vSize = vBuffer.remaining()
+    val nv21 = ByteArray(ySize + uSize + vSize)
+    yBuffer.get(nv21, 0, ySize)
+    vBuffer.get(nv21, ySize, vSize)
+    uBuffer.get(nv21, ySize + vSize, uSize)
+    return nv21
 }
