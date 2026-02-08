@@ -65,7 +65,13 @@ fun NavGraph() {
             modifier = Modifier.padding(padding)
         ) {
             composable(Screen.Profile.route) { ProfileScreen() }
-            composable(Screen.Knowledge.route) { KnowledgeListScreen(navController, notes) }
+            composable(Screen.Knowledge.route) {
+                KnowledgeListScreen(
+                    navController = navController,
+                    notes = notes,
+                    onDeleteNote = { note -> notes.remove(note) }
+                )
+            }
             composable("knowledge/{id}") { backStackEntry ->
                 val knowledgeId = backStackEntry.arguments?.getString("id")
                 val note = notes.firstOrNull { it.id == knowledgeId }
