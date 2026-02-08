@@ -4,28 +4,64 @@ import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.example.matrixarctic.ui.model.KnowledgeNote
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.qrcode.QRCodeWriter
 
 @Composable
-fun KnowledgeDetailScreen() {
+fun KnowledgeDetailScreen(
+    navController: NavController,
+    note: KnowledgeNote?
+) {
     val qrSizePx = with(LocalDensity.current) { 240.dp.roundToPx() }
     var qrImage by remember { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
+    var showCopyDialog by remember { mutableStateOf(false) }
+
+    if (showCopyDialog) {
+        AlertDialog(
+            onDismissRequest = { showCopyDialog = false },
+            title = { Text("Скопировать знание?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showCopyDialog = false
+                    note?.let { navController.navigate("knowledge/${it.id}/copy") }
+                }) {
+                    Text("Yes")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCopyDialog = false }) {
+                    Text("No")
+                }
+            }
+        )
+    }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Код замка", style = MaterialTheme.typography.titleLarge)
+        Text(note?.title ?: "Код замка", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(16.dp))
-        Text("Код замка №424. Получен и проверен.")
+        Text(note?.content ?: "Код замка №424. Получен и проверен.")
         Spacer(Modifier.weight(1f))
         qrImage?.let { image ->
             Image(
@@ -37,6 +73,13 @@ fun KnowledgeDetailScreen() {
             )
             Spacer(Modifier.height(16.dp))
         }
+        Button(
+            onClick = { showCopyDialog = true },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Копировать")
+        }
+        Spacer(Modifier.height(8.dp))
         Button(
             onClick = {
                 qrImage = generateQrCode(KNOWLEDGE_QR_CONTENT, qrSizePx).asImageBitmap()
