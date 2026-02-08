@@ -40,7 +40,7 @@ fun NavGraph() {
     val items = listOf(Screen.Profile, Screen.Knowledge, Screen.Scan)
     val notes = remember {
         mutableStateListOf(
-            KnowledgeNote("1", "Код замка", "Код замка №...")
+            KnowledgeNote("1", "Код замка", "Код замка №424. Получен и проверен.")
         )
     }
 

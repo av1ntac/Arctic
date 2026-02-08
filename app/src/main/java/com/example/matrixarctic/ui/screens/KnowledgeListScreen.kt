@@ -34,7 +34,8 @@ fun KnowledgeListScreen(
                 ) {
                     Column(Modifier.padding(16.dp)) {
                         Text(note.title, style = MaterialTheme.typography.titleMedium)
-                        Text(note.content.take(50) + "…")
+                        val preview = if (note.content.length > 50) note.content.take(50) + "…" else note.content
+                        Text(preview)
                     }
                 }
             }
