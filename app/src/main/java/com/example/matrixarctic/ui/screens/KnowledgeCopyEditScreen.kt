@@ -13,13 +13,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.matrixarctic.ui.model.KnowledgeNote
 
+private const val MAX_KNOWLEDGE_TEXT_LENGTH = 1000
+
 @Composable
 fun KnowledgeCopyEditScreen(
     sourceNote: KnowledgeNote,
     onSave: (String) -> Unit,
     onCancel: () -> Unit
 ) {
-    var content by remember(sourceNote.id) { mutableStateOf(sourceNote.content) }
+    var content by remember(sourceNote.id) { mutableStateOf(sourceNote.content.take(MAX_KNOWLEDGE_TEXT_LENGTH)) }
 
     Column(
         modifier = Modifier
@@ -39,8 +41,11 @@ fun KnowledgeCopyEditScreen(
 
         OutlinedTextField(
             value = content,
-            onValueChange = { content = it },
+            onValueChange = { updatedText ->
+                content = updatedText.take(MAX_KNOWLEDGE_TEXT_LENGTH)
+            },
             label = { Text("Текст знания") },
+            supportingText = { Text("${content.length}/$MAX_KNOWLEDGE_TEXT_LENGTH") },
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
@@ -51,7 +56,7 @@ fun KnowledgeCopyEditScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Button(
-                onClick = { onSave(content) },
+                onClick = { onSave(content.take(MAX_KNOWLEDGE_TEXT_LENGTH)) },
                 modifier = Modifier.weight(1f)
             ) {
                 Text("Save")
