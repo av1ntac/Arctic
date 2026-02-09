@@ -2,12 +2,7 @@ package com.example.matrixarctic.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -16,9 +11,7 @@ import com.example.matrixarctic.R
 
 @Composable
 fun ProfileScreen() {
-    var name by remember { mutableStateOf("Джонни") }
-    var isEditing by remember { mutableStateOf(false) }
-    var editingName by remember { mutableStateOf(name) }
+    val name = "Джонни"
     val health = 92
 
     Column(
@@ -32,55 +25,10 @@ fun ProfileScreen() {
         )
         Spacer(Modifier.height(16.dp))
 
-        if (isEditing) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = editingName,
-                    onValueChange = { editingName = it },
-                    label = { Text("Player Name") }
-                )
-                Spacer(Modifier.width(8.dp))
-                IconButton(onClick = {
-                    name = editingName
-                    isEditing = false
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Save player name"
-                    )
-                }
-                IconButton(onClick = {
-                    editingName = name
-                    isEditing = false
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Cancel editing player name"
-                    )
-                }
-            }
-        } else {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = name,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Spacer(Modifier.width(8.dp))
-                IconButton(onClick = {
-                    editingName = name
-                    isEditing = true
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit player name"
-                    )
-                }
-            }
-        }
+        Text(
+            text = name,
+            style = MaterialTheme.typography.titleMedium
+        )
 
         Spacer(Modifier.height(32.dp))
         Text("Ментальное здоровье", style = MaterialTheme.typography.titleMedium)
