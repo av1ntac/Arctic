@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.painterResource
 import com.example.matrixarctic.R
+import androidx.compose.runtime.*
 
 @Composable
 fun ProfileScreen() {
